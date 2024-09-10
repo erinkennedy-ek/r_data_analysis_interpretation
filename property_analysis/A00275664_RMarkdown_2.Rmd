@@ -1,0 +1,468 @@
+---
+title: "Interpretation of Data Assignment II"
+author: "A00275664"
+date: "2023-12-01"
+output: 
+  pdf_document:
+    latex_engine: xelatex
+editor_options: 
+  markdown: 
+    wrap: 72
+bibliography: references.bib
+---
+
+# Preparing Datasets for Analysis
+
+```{r setup, include=FALSE}
+PropertyDataset1<- read.csv("C:/Users/erink/OneDrive/Desktop/Interpretation of Data/PropertyDataset1.csv",
+                            header = TRUE,
+                            sep = ",")
+PropertyDataset2<- read.csv("C:/Users/erink/OneDrive/Desktop/Interpretation of Data/PropertyDataset2.csv",
+                            fileEncoding='latin1',check.names=F)
+```
+
+```{r data1, include=FALSE}
+str(PropertyDataset1)
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(stringr)
+library(formatR)
+library(readr)
+library(tidyr)
+```
+
+# Tidy the Column Names
+
+```{r}
+colnames(PropertyDataset1) <- gsub(" ", "_", colnames(PropertyDataset1))
+colnames(PropertyDataset2) <- gsub(" ", "_", colnames(PropertyDataset2))
+```
+
+# Check for Inconsistencies
+
+## PropertyDataset1
+
+Check the new dataset's variables are consistent and understandable
+
+```{r eval = FALSE}
+PropertyDataset1$raw_address[1:6] #Not consistent, need to capitalise data values
+unique(PropertyDataset1$num_bedrooms) #Should be changed to a numeric format
+unique(PropertyDataset1$num_bathrooms) #Should be changed to a numeric format
+unique(PropertyDataset1$parking) # Not consistent, inputs need to be replaced to Yes/No
+str(PropertyDataset1) # check data formats 
+```
+
+## PropertyDataset2
+
+```{r eval = FALSE}
+PropertyDataset2$Address[1:10] #Not consistent title case
+PropertyDataset2$`Price_()`[1:10] #symbol not recognised
+PropertyDataset2$`Description_of_Property`[1:10] #Inconsistent title case
+unique(PropertyDataset2$County) #Inconsistent title case and language
+unique(PropertyDataset2$`Not_Full_Market_Price`) # Inconsistent title case
+unique(PropertyDataset2$VAT_Exclusive) # Inconsistent title case
+PropertyDataset2$Property_Size_Description[1:10] # Inconsistent language and title case
+str(PropertyDataset2) # Check the structure of dataset
+```
+
+# Format Modification
+
+## PropertyDataset1
+
+### PropertyDataset1a\$sale_date
+
+To begin cleaning the first Property dataset, we will convert the column
+data types to their appropriate formats for analysis. The *lubridate*
+package is used to change the **sale_date** format from a character to
+date format
+
+```{r}
+# Converts from a character format to date format
+PropertyDataset1a<-PropertyDataset1
+PropertyDataset1a$sale_date<- dmy(PropertyDataset1a$sale_date)
+str(PropertyDataset1a$sale_date)
+```
+
+### PropertyDataset1a\$num_bedrooms
+
+Next, **num_bedrooms** format will be modified to a numeric data format.
+Advantages for this include
+
+-   Consistency within variables
+-   Easier manipulation of data
+-   Better variety for data visualisation options
+
+```{r include=FALSE}
+# View some example values of the column
+PropertyDataset1a$num_bedrooms[1:10]
+#Display unique values to replace
+unique(PropertyDataset1a$num_bedrooms)
+```
+
+```{r echo=T, results='hide'}
+# Replacing the new dataframe PropertyDataset1a num_bedrooms Character values with Numeric values
+PropertyDataset1a <- PropertyDataset1a %>%
+  mutate(num_bedrooms = case_when(num_bedrooms == "1 Bedroom" ~ "1",
+                                  num_bedrooms == "2 Bedrooms" ~ "2",
+                                  num_bedrooms == "3 Bedrooms" ~ "3",
+                                  num_bedrooms == "4 Bedrooms" ~ "4",
+                                  num_bedrooms == "5 Bedrooms" ~ "5",
+                                  num_bedrooms == "6 Bedrooms" ~ "6",
+                                  num_bedrooms == "7 Bedrooms" ~ "7",
+                                  num_bedrooms == "8 Bedrooms" ~ "8",
+                                  num_bedrooms == "11 Bedrooms" ~ "11",
+                                  num_bedrooms == "14 Bedrooms" ~ "14",
+                                  TRUE ~ as.character(num_bedrooms)))
+
+# Converting the column to a Numeric data type
+PropertyDataset1a$num_bedrooms<- as.numeric(PropertyDataset1a$num_bedrooms)
+#This warning from R alerts the user that it could not alter some of the  data values in the 
+#column, which results in NA appearing in the cells.
+```
+
+```{r}
+# Completed successfully. Compare the changes made
+PropertyDataset1a$num_bedrooms[1:10]
+```
+
+### PropertyDataset1a\$num_bathrooms
+
+Now, we will do the same to **num_bathrooms**
+
+```{r echo=T, results='hide'}
+# View some example values of the column
+PropertyDataset1a$num_bathrooms[1:10]
+#Display unique variables to replace
+unique(PropertyDataset1a$num_bathrooms)
+
+# Replacing the dataframe PropertyDataset1a num_bedrooms Character values with Numeric values
+PropertyDataset1a <- PropertyDataset1a %>%
+  mutate(num_bathrooms = case_when(num_bathrooms == "1 Bathroom" ~ "1",
+                                   num_bathrooms == "2 Bathrooms" ~ "2",
+                                   num_bathrooms == "3 Bathrooms" ~ "3",
+                                   num_bathrooms == "4 Bathrooms" ~ "4",
+                                   num_bathrooms == "5 Bathrooms" ~ "5",
+                                   num_bathrooms == "6 Bathrooms" ~ "6",
+                                   num_bathrooms == "7 Bathrooms" ~ "7",
+                                   num_bathrooms == "8 Bathrooms" ~ "8",
+                                   num_bathrooms == "15 Bathrooms" ~ "15",
+                                   TRUE ~ as.character(num_bathrooms)))
+
+# Converting the column to a Numeric data type
+PropertyDataset1a$num_bathrooms<- as.numeric(PropertyDataset1a$num_bathrooms)
+```
+
+```{r}
+#Completed successfully. Compare the changes made
+PropertyDataset1a$num_bedrooms[1:10]
+```
+
+### PropertyDataset1a\$parking
+
+Replace **parking** variables with consistent and meaningful data values
+
+```{r}
+#Display unique variables to replace
+unique(PropertyDataset1a$parking)
+
+# Replacing the dataframe PropertyDataset1a parking Character values with consistent values
+PropertyDataset1a <- PropertyDataset1a %>%
+  mutate(parking = case_when(parking == 'Has' ~ 'Yes',
+                             parking == 'No' ~ 'No',
+                             parking == 'has' ~ 'Yes',
+                             !is.na(parking) ~ 'No',
+                             TRUE ~ as.character(parking1))) %>%
+  select(-parking1)  # Remove 'parking1' column
+
+```
+
+```{=tex}
+\hfill\break
+\hfill\break
+```
+### PropertyDataset1a\$raw_address
+
+Format **raw_address** to title_case using *stringr* package
+
+```{r}
+PropertyDataset1a$raw_address <- str_to_upper(PropertyDataset1a$raw_address)
+```
+
+## Review Updated Data Variables
+
+Finally, ensure data type and variables are consistent and correct
+
+```{r tidy = TRUE, tidy.opts=list(width.cutoff=60)}
+unique(PropertyDataset1a$num_bedrooms) # No character variables are observed
+
+unique(PropertyDataset1a$num_bathrooms) #No character variables are observed
+
+unique(PropertyDataset1a$parking) # Consistent variables created
+
+PropertyDataset1a$raw_address[1:5] # Consistent sentence case
+
+str(PropertyDataset1a[,c(4, 10, 11)]) 
+# sale_date, num_bedrooms and num_bathrooms all now have their updated data format
+```
+
+```{=tex}
+\hfill\break
+\hfill\break
+\hfill\break
+\hfill\break
+\hfill\break
+\hfill\break
+```
+## PropertyDataset2
+
+### PropertyDataset2a\$Date_of_Sale\_(dd/mm/yyyy)
+
+```{r}
+# Rename Date_of_Sale_(dd/mm/yyyy) column for easier analysis
+PropertyDataset2a<- PropertyDataset2
+colnames(PropertyDataset2a)[colnames(PropertyDataset2a) == 'Date_of_Sale_(dd/mm/yyyy)'] <- 'Date_of_Sale'
+```
+
+### PropertyDataset2a\$Address
+
+Using *stringr* package, we convert tidy up the columns to title case
+and delete replace blanks cells with NA for further cleaning later
+
+```{r}
+#Converting the Address column to Title case
+PropertyDataset2a$Address = str_to_title(PropertyDataset2a$Address)
+
+```
+
+### PropertyDataset2a\$Price
+
+```{r}
+#Rename Price column for easier readability
+colnames(PropertyDataset2a)[5] <- 'Price'
+#Converting Price column to numeric & removing unrecognised characters
+PropertyDataset2a$Price <- as.numeric(gsub("[^0-9.]", "", PropertyDataset2a$Price))
+
+```
+
+### PropertyDataset2a\$Description of Property
+
+```{r}
+# Modifying format to title case
+PropertyDataset2a$Description_of_Property = str_to_title(PropertyDataset2a$Description_of_Property)
+
+# Replacing misspelled descriptions
+PropertyDataset2a$Description_of_Property[PropertyDataset2a$Description_of_Property == 'Teach/?Ras?N C?Naithe Nua'] <- 'Teach/Árasán Cónaithe Nua'
+```
+
+### PropertyDataset2a\$County
+
+```{r PropertyDataset$County}
+#Changing the County column to title case
+PropertyDataset2a$County = str_to_title(PropertyDataset2a$County)
+unique(PropertyDataset2a$County)
+#Replacing duplicate data with set inputs
+PropertyDataset2a <- PropertyDataset2a %>%
+  mutate(County = case_when(County == 'Co.  Carlow' ~ 'Carlow',
+                            County == 'County Westmeath' ~ 'Westmeath',
+                            County == 'Gaillimh' ~ 'Galway',
+                            County == 'Tipp' ~ 'Tipperary',
+                            County == 'Co. Offaly' ~ 'Offaly',
+                            County == 'Ros Comain' ~ 'Roscommon',
+                            County == 'County Dublin' ~ 'Dublin',
+                            County == 'Corcaigh' ~ 'Cork',
+                            County == 'County Louth' ~ 'Louth',
+                            County == 'County Cavan' ~ 'Cavan',
+                            TRUE ~ as.character(County)))
+```
+
+### PropertyDataset2a\$Not_Full_Market_Price
+
+```{r PropertyDataset$Not_Full_Market_Price}
+#Changing the Not_Full_Market_Price column to title case
+PropertyDataset2a$Not_Full_Market_Price = str_to_title(PropertyDataset2a$Not_Full_Market_Price)
+```
+
+### PropertyDataset2a\$Vat_Exclusive
+
+```{r PropertyDataset$Vat_Exclusive}
+#Changing the Vat_Exclusive column to title case
+PropertyDataset2a$VAT_Exclusive = str_to_title(PropertyDataset2a$VAT_Exclusive)
+```
+
+### PropertyDataset2a\$Property_Size_Description
+
+```{r}
+#Changing the Property_Size_Description column to title case
+PropertyDataset2a$Property_Size_Description = str_to_title(PropertyDataset2a$Property_Size_Description)
+
+#Replacing data values with the most common language format
+PropertyDataset2a$Property_Size_Description[PropertyDataset2a$Property_Size_Description == 'Níos Mó Ná Nó Cothrom Le 38 Méadar Cearnach Agus Níos Lú Ná 125 Méadar Cearnach'] <- 'More Than Or Equal To 38 Sq Meters And Less Than 125 Sq Meters'
+
+PropertyDataset2a$Property_Size_Description[PropertyDataset2a$Property_Size_Description == 'N?Os L? N? 38 M?Adar Cearnach'] <- 'Greater Than Or Equal To 38 Sq Metres'
+```
+
+# Null Values In a Dataset
+
+Removing null values from a dataframe is also an important part of data
+cleaning, however it also can affect the remaining data in the dataset
+when too many null values are present.
+
+```{r eval=FALSE}
+PropertyDataset1b<- na.omit(PropertyDataset1a)
+```
+
+Due to this, I will not remove the null values in the datasets
+
+# Creating New Columns
+
+## PropertyDataset1a
+
+```{r}
+#Creating a Month column for a more detailed analysis
+PropertyDataset1a$Month <- month(PropertyDataset1a$sale_date)
+```
+
+##PropertyDataset2a
+
+```{r warnings = TRUE}
+#Creating Three new columns for address to provide more exploratory details
+PropertyDataset2a <- separate(PropertyDataset2a, Address, into = c("Street", "City", "Area"), sep = ",")
+# The warnings tell that some data does not have Area values and have been replaced with NA instead
+```
+
+# Identifying Outliers in the Dataset
+
+## PropertyDataset1a
+
+The data plotted below is quite bunched together and not easy to gather
+a readings from. Outliers are easily identifiable spaced out far from
+the average price range, whilst the majority of clusters sit in the
+bottom
+
+```{r}
+mean(PropertyDataset1a$price)
+
+ggplot(PropertyDataset1a, aes(sale_date, price)) +
+  geom_point(aes(colour = vat_exclusive)) +
+  labs(x = "Sale Date",
+       y = "Price",
+       title = "Price vs Sale Date")
+```
+
+To form a more comprehensible and representative scatterplot, we will
+remove outliers in the data. Two outliers were removed, however there
+was a significant change in the visual aspect of the graph. The data is
+now more spread out. It is easier to identify individual plots on the
+graph, identify groups and possible trends.
+
+The mean has also reduced to 244532.7 on average paid.
+
+```{r}
+#Filter outliers into new dataframe
+
+PropertyData1b <- PropertyDataset1a %>%
+  filter(price <= mean(PropertyDataset1a$price))
+
+# Mean to compare 
+
+mean(PropertyData1b$price)
+
+# Scatterplot without outliers
+
+ggplot(PropertyData1b, aes(x = sale_date, y = price)) +
+  geom_point(aes(colour = vat_exclusive)) +
+  labs(title = "Scatterplot of Price vs Sale Date", x = "Sale Date", y = "Price")
+```
+
+The scatterplot graph is not easy to analyse regardless of filtering
+outliers. Due to the large amount of data in this dataset, it would need
+to be filtered further to be easily understandable. Here is an example.
+
+```{r}
+# Example of sales date and price for houses in county Galway
+gal_prop_data <- PropertyData1b %>%
+  filter(county == "Galway")
+
+
+# Create a scatterplot
+ggplot(gal_prop_data, aes(x = sale_date, y = price)) +
+  geom_point(colour = "purple") +
+  labs(title = "Price vs Sale Date for Properties in Galway",
+       x = "Sale Date", y = "Price")
+```
+
+Clusters can be seen in 2015 at approximately the 100-150,000 price mark
+
+## PropertyDataset2a
+
+```{r}
+#Boxplot with all values included
+
+ggplot(PropertyDataset2a, aes(x = Description_of_Property, y = Price)) +
+  geom_boxplot(colour = "orange") +
+  labs(title = "Prices by House Type", x = "House Type", y = "Price") +
+  coord_flip()
+
+```
+
+```{r}
+
+
+mean(PropertyDataset2a$Price) #Mean price of a property in Dataset 2
+
+#Filtering out outliers
+
+PropertyDataset2b <- PropertyDataset2a %>%
+  filter(Price <= mean(PropertyDataset2a$Price))
+
+
+# Box plot for filtered PropertyDataset2b
+
+ggplot(PropertyDataset2b, aes(x = Description_of_Property, y = Price)) +
+  geom_boxplot(colour = "orange", fill = "green") +
+  labs(title = "Prices by House Type", x = "House Type", y = "Price") +
+  coord_flip()
+
+```
+
+```{=tex}
+\hfill\break
+\hfill\break
+\hfill\break
+\hfill\break
+\hfill\break
+\hfill\break
+\hfill\break
+\hfill\break
+\hfill\break
+\hfill\break
+\hfill\break
+\hfill\break
+\hfill\break
+\hfill\break
+\hfill\break
+\hfill\break
+\hfill\break
+\hfill\break
+\hfill\break
+\hfill\break
+\hfill\break
+\hfill\break
+```
+# References
+
+[@ssayols2017a]
+
+[@zach2020]
+
+[@ieeexpl]
+
+[\@!latexe2023]
+
+[@errorwh]
+
+[@inscaven2016]
+
+[file:///C:/Users/erink/Downloads/rmarkdown%20(2).pdf](file:///C:/Users/erink/Downloads/rmarkdown%20(2).pdf){.uri} -
+RMarkdown Cheatsheet, RStudio
